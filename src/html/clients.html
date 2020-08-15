@@ -1,0 +1,445 @@
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>VK Billing System</title>
+    <!-- https://electronjs.org/docs/tutorial/security#csp-meta-tag -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+    <link rel="shortcut icon" href="../assets/images/vk_logo_ico.ico">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';" />
+    <link href="https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700,800,900" rel="stylesheet">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="../assets/css/index.css">
+    <style type="text/css" media="screen">
+      .paggination-ul{
+        list-style: none;display: inline-flex;
+      }
+      .paggination-ul li{
+        padding: 3px 5px;height: 25px;margin: 0 5px;border: 1px solid #001529;color: #001529;cursor: pointer;
+      }
+      .paggination-ul li:hover {
+        transition: .5s ease;
+        background: #001529!important;
+        color: white!important;
+      }  
+    </style>
+  </head>
+  <body onload="getClients('')">
+  	<div class="wrapper d-flex align-items-stretch">
+      <nav id="sidebar">
+        <div class="custom-menu">
+          <button type="button" id="sidebarCollapse" class="btn btn-primary">
+            <i class="fa fa-bars"></i>
+            <span class="sr-only">Toggle Menu</span>
+          </button>
+        </div>
+        <div class="p-4 pt-5">
+          <h1 style="font-size: 30px;text-transform: capitalize;"><a href="index.html" class="logo" id="admin_name"></a></h1>
+          <ul class="list-unstyled components mb-5">
+            <li onclick="handleMenuClick('invoices');">
+              <a href="#homeSubmenu" data-toggle="collapse" aria-expanded="false"><i class="fa fa-file"></i> Invoices</a>
+            </li>
+            <li class="active" onclick="handleMenuClick('clients');">
+                <a href="#"><i class="fa fa-users"></i> Clients</a>
+            </li>
+            <li>
+              <a href="#pageSubmenu" data-toggle="collapse" aria-expanded="false" class="dropdown-toggle"><i class="fa fa-cog"></i> Settings</a>
+              <ul class="collapse list-unstyled" id="pageSubmenu">
+                <li onclick="handleMenuClick('manage_service');">
+                    <a href="#">Manage Service</a>
+                </li>
+                <li onclick="handleMenuClick('manage_company');">
+                    <a href="#">Manage Company</a>
+                </li>
+                <li onclick="handleMenuClick('my_profile');">
+                    <a href="#">My Profile</a>
+                </li>
+              </ul>
+            </li>
+          </ul>
+
+          <div class="footer">
+            <button  onclick="logout();"><i class="fa fa-mail-reply-all"></i> Logout</button>
+          </div>
+
+        </div>
+      </nav>
+
+      <!-- Page Content  -->
+      <div id="content" class="p-4 p-md-5 pt-5">
+          <h2><i class="fa fa-users"></i> Clients</h2>
+          <div style="display: inline-flex;width: 100%;">
+            <button type="button" class="btn btn-primary" id="new_client" style="width: 135px;">New client</button>
+            <input type="search" class="form-control" id="search_client" placeholder="Search client" style="width: 30%;margin-left: 60%;background: none;border-bottom: 1px solid #001529;border-radius: 0;">
+          </div>
+          <div style="padding-top: 20px;">
+            <table class="table table-borderless">
+              <thead>
+                <tr>
+                  <th scope="col" style="text-align: center;">Company Name</th>
+                  <th scope="col" style="text-align: center;">Client Name</th>
+                  <th scope="col" style="text-align: center;">GST</th>
+                  <th scope="col" style="text-align: center;">Address</th>
+                  <th scope="col" style="text-align: center;">Associates With</th>
+                  <th scope="col" style="text-align: center;">Added On</th>
+                </tr>
+              </thead>
+              <tbody id="clientsData">
+                <tr>
+                  <td colspan="6" style="text-align: center;">
+                    <div style="height: 20px;width: 20px;font;color: #90999D!important;text-align: center;" class="spinner-border text-light" id="loading" role="status">
+                      <span class="sr-only">Loading...</span>
+                    </div>
+                  </td>  
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="6" id="paggination" style="text-align: right;">
+                    
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+      </div>
+      <!-- End Page Content -->
+
+      <!-- Add/Edit client modal -->
+      <div class="modal fade bd-example-modal-lg" id="newClientModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+          <div class="modal-content">
+            <div class="modal-header" style="padding: 1rem 1rem 0rem 1rem;border-bottom: none;">
+              <h5 class="modal-title" id="exampleModalLabel"></h5>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div class="modal-body">
+              <form id="client_form">
+                <div class="row">
+                  <div class="col">
+                    <div class="form-group">
+                      <input type="hidden" id="client_id" />
+                      <label for="recipient-name" class="col-form-label">Handel By:</label>
+                      <select class="form-control" id="add_company">
+                      </select>
+                    </div>
+                  </div>
+                  <div class="col">
+                    <div class="form-group">
+                      <label for="message-text" class="col-form-label">GST Number:</label>
+                      <input type="text" class="form-control" name="gst_number" id="gst_number" placeholder="GST Number">
+                    </div>
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="col">
+                    <div class="form-group">
+                      <label for="recipient-name" class="col-form-label">Company:</label>
+                      <input type="text" class="form-control" name="company_name" id="company_name" placeholder="Company Name">
+                    </div>
+                  </div>
+                  <div class="col">
+                    <div class="form-group">
+                      <label for="message-text" class="col-form-label">Name:</label>
+                      <input type="text" class="form-control" name="name" id="name" placeholder="Client Name">
+                    </div>
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="col">
+                    <div class="form-group">
+                      <label for="message-text" class="col-form-label">Address:</label>
+                      <textarea class="form-control" rows="4" name="address" id="address" placeholder="Client Address" style="height: auto!important"></textarea>
+                    </div>
+                  </div>
+                </div>
+              </form>
+            </div>
+            <div class="modal-footer" style="border-top: none;">
+              <button type="reset" class="btn btn-secondary" data-dismiss="modal">Close</button>
+              <button type="button" id="save_client" class="btn btn-primary">Save Client</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Delete client Modal -->
+      <div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-body">
+                    <center>
+                        <i class="fa fa-exclamation-circle" style="font-size: 65px;color: #f1f108;"></i>
+                        <h3 style="padding: 10px 0;">Delete Client?</h3>
+                        <p style="padding-bottom: 10px;">Are you sure to remove this Client?</p>
+                        <div style="margin-top: 5px;">
+                            <input type="hidden" name="delete_client_id" id="delete_client_id">
+                            <button type="reset" id="resetDelete" class="btn btn-secondary" style="background: none;color: grey;margin-right: 10px;">Cancel</button>
+                            <button type="submit" class="btn btn-danger add" id="deleteClient" style="margin-left: 10px;background-color: #f13d3d;">Delete Client</button>
+                        </div>
+                    </center>  
+                </div>
+            </div>
+        </div>
+      </div>
+    </div>
+    <script>
+      const $ = require('jquery');
+      const { remote } = require('electron');
+      const axios = require('axios');
+      require('popper.js');
+      require('bootstrap');
+
+      const API = 'http://127.0.0.1/billingsystem/api/v1';
+
+      let admin = localStorage.getItem('username');
+      $('#admin_name').html(admin);
+
+      var fullHeight = function() {
+
+        $('.js-fullheight').css('height', $(window).height());
+        $(window).resize(function(){
+          $('.js-fullheight').css('height', $(window).height());
+        });
+
+      };
+      fullHeight();
+
+      $('#sidebarCollapse').on('click', function () {
+          $('#sidebar').toggleClass('active');
+      });
+
+      var handleMenuClick = function(page) {
+        if(page == 'invoices'){
+          remote.getCurrentWindow().loadFile('src/html/index.html')
+        }else if(page == 'clients'){
+          remote.getCurrentWindow().loadFile('src/html/clients.html')
+        }else if(page == 'manage_company'){
+          remote.getCurrentWindow().loadFile('src/html/company.html')
+        }else if(page == 'my_profile'){
+          remote.getCurrentWindow().loadFile('src/html/myprofile.html')
+        }else if(page == 'manage_service'){
+          remote.getCurrentWindow().loadFile('src/html/services.html')
+        }
+      }
+
+      let token = localStorage.getItem('access_token');
+      function getClients(name,page=1,limit=5){
+        const url = API+`/clients?page=${page}&limit=${limit}&name=${name}`;
+        axios.get(url, { 
+          headers: {
+              'Authorization': `Bearer ${token}`
+          }
+        }).then(response => {
+          if(response.data.data.status == "success"){
+            let clientsData = response.data.data.response.data
+            let count = response.data.data.response.count
+            let current_page = response.data.data.response.current_page
+            let pages = response.data.data.response.pages
+
+            if(clientsData.length > 0){
+              
+              let paggination = "";
+              if(pages > 0){
+                if(current_page==1){
+                  paggination=`<ul class="paggination-ul">
+                        <li style="cursor: not-allowed;"> <<< </li>
+                        <li style="cursor: not-allowed;"> < </li>`;
+                }else{
+                  paggination=`<ul class="paggination-ul">
+                        <li onclick="getClients('',${1})"> <<< </li>
+                        <li onclick="getClients('',${current_page-1})"> < </li>`;
+                }
+
+                for(let i=0; i<pages;i++){
+                  if(current_page == (i+1)){
+                    paggination+=`<li style="background: #001529;color: white;" onclick="getClients('',${i+1})"> ${i+1} </li>`;
+                  }else{
+                    paggination+=`<li onclick="getClients('',${i+1})"> ${i+1} </li>`;
+                  }
+                }
+                if(current_page==pages){
+                  paggination+=`<li style="cursor: not-allowed;"> > </li>
+                        <li style="cursor: not-allowed;"> >>> </li>
+                      </ul>`;
+                }else{
+                  paggination+=`<li onclick="getClients('',${current_page+1})"> > </li>
+                        <li onclick="getClients('',${pages})"> >>> </li>
+                      </ul>`;
+                }
+              }
+
+              let clientsRecords = '';
+              clientsData.map((client, index) => {
+                clientsRecords += `<tr>
+                    <th style="text-align: center;">${client.company_name}</th>
+                    <td style="text-align: center;">${client.name}</td>
+                    <td style="text-align: center;vertical-align: middle;">${client.gst_number}</td>
+                    <td style="text-align: center;">${client.address}</td>
+                    <td style="text-align: center;">${client.company.name}</td>
+                    <td style="text-align: center;vertical-align: middle;width: 12%;">${client.created_at.date}</td>
+                    <td style="text-align: center;vertical-align: middle;width: 6%;padding: 0;text-align: center;vertical-align: middle;">
+                      <i class="fa fa-edit" onclick="edit_client('${client.id}','${client.company_name}','${client.name}','${client.gst_number}','${client.address}','${client.company.id}')" style="padding: 5px;font-size: 18px;cursor: pointer;"></i>
+                      <i class="fa fa-trash" onclick="delete_client('${client.id}')" style="padding: 5px;font-size: 18px;cursor: pointer;"></i>
+                    </td>
+                  </tr>`
+              });
+              $('#paggination').html(paggination);
+              $('#clientsData').html(clientsRecords);
+            }else{
+              $('#paggination').html("");
+              $('#clientsData').html('<tr><td colspan="6" style="text-align: center;">No clients found!</td></tr>')
+            }
+          }
+        });
+      }
+
+      const companyUrl = API+"/company/get-company";
+      axios.get(companyUrl, { 
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
+      }).then(response => {
+        if(response.data.data.status == "success"){
+          let companyData = response.data.data.response
+          if(companyData.length > 0){
+            let companyRecords = '<option value="">Select Company</option>';
+            companyData.map((company, index) => {
+              companyRecords += `<option value="${company.id}">${company.name}</option>`
+            });
+            $('#add_company').html(companyRecords);
+          }
+        }
+      });
+
+      $('#new_client').on('click', function(){
+        $('.modal-title').html(`<i class="fa fa-user-plus"></i> Add Client`);
+        $('#client_id').val('');
+        $('#client_form').trigger('reset');
+        $('#newClientModal').modal('show');
+      });
+
+      $('#save_client').on('click', function(){
+        let add_company = $('#add_company').val();
+        let gst_number = $('#gst_number').val();
+        let company_name = $('#company_name').val();
+        let name = $('#name').val();
+        let address = $('#address').val();
+        if(add_company==''){
+          $('#add_company').css('border-bottom', '1px solid red');
+          return;
+        }else{
+          $('#add_company').css('border-bottom', '1px solid #00000038');
+        }
+        if(gst_number==''){
+          $('#gst_number').css('border-bottom', '1px solid red');
+          return;
+        }else{
+          $('#gst_number').css('border-bottom', '1px solid #00000038');
+        }
+        if(company_name==''){
+          $('#company_name').css('border-bottom', '1px solid red');
+          return;
+        }else{
+          $('#company_name').css('border-bottom', '1px solid #00000038');
+        }
+        if(name==''){
+          $('#name').css('border-bottom', '1px solid red');
+          return;
+        }else{
+          $('#name').css('border-bottom', '1px solid #00000038');
+        }
+        if(address==''){
+          $('#address').css('border-bottom', '1px solid red');
+          return;
+        }else{
+          $('#address').css('border-bottom', '1px solid #00000038');
+        }
+        let data = {
+          'company_id':add_company,
+          'gst_number':gst_number,
+          'company_name':company_name,
+          'name':name,
+          'address':address
+        };
+        let token = localStorage.getItem('access_token');
+        if($('#client_id').val()!=''){
+          let updateClientUrl = API+'/clients/'+$('#client_id').val();
+          axios.put(updateClientUrl,data,{
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+          }).then(response=>{
+            if(response.data.response){
+              remote.getCurrentWindow().loadFile('src/html/clients.html')
+            }else{
+
+            }
+          })
+        }else{
+          let addClientUrl = API+'/clients';
+          axios.post(addClientUrl,data, { 
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+          }).then(response => {
+            if(response.data.data.status == "success"){
+              handleMenuClick('clients');
+            }
+          });
+        }
+      });
+
+      function edit_client(id,company_name,client_name,gst_number,address,handelBy){
+        $('.modal-title').html(`<i class="fa fa-user-plus"></i> Edit Client`);
+        $('#client_id').val(id);
+        $('#add_company').val(handelBy)
+        $('#gst_number').val(gst_number)
+        $('#company_name').val(company_name)
+        $('#name').val(client_name)
+        $('#address').val(address)
+        $('#newClientModal').modal('show');
+      }
+
+      function delete_client(id){
+        $('#delete_client_id').val(id);
+        $('#deleteModal').modal('show');
+      }
+
+      $('#resetDelete').on('click', function(){
+        $('#deleteModal').modal('hide');
+        $('#delete_client_id').val('');
+      })
+
+      $('#deleteClient').on('click', function(){
+        let id = $('#delete_client_id').val();
+        if(id!=''){
+          let url = API+'/clients/'+id;
+          axios.delete(url, { 
+              headers: {
+                  'Authorization': `Bearer ${token}`
+              }
+          }).then(response=>{
+              if(response.status==204){
+                  $("#deleteModal").modal('hide');
+                  remote.getCurrentWindow().loadFile('src/html/clients.html')
+              }
+          })
+        }
+      });
+
+      $('#search_client').on('keyup', function(){
+        let name = $('#search_client').val();
+        getClients(name);
+      });
+
+      function logout() {
+        localStorage.clear();
+        remote.getCurrentWindow().loadFile('src/html/login.html')
+      }
+    </script>
+  </body>
+</html>

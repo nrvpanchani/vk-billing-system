@@ -1,0 +1,289 @@
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>VK Billing System</title>
+    <!-- https://electronjs.org/docs/tutorial/security#csp-meta-tag -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+    <link rel="shortcut icon" href="../assets/images/vk_logo_ico.ico">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';" />
+    <link href="https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700,800,900" rel="stylesheet">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="../assets/css/index.css">
+    <style type="text/css" media="screen">
+      ::-webkit-scrollbar{
+        width: 6px;
+      }  
+      ::-webkit-scrollbar-thumb {
+        background: #888; 
+        border-radius: 5px;
+      }
+
+      /* Handle on hover */
+      ::-webkit-scrollbar-thumb:hover {
+        background: #555; 
+      }
+    </style>
+  </head>
+  <body>
+  	<div class="wrapper d-flex align-items-stretch">
+      <nav id="sidebar">
+        <div class="custom-menu">
+          <button type="button" id="sidebarCollapse" class="btn btn-primary">
+            <i class="fa fa-bars"></i>
+            <span class="sr-only">Toggle Menu</span>
+          </button>
+        </div>
+        <div class="p-4 pt-5">
+          <h1 style="font-size: 30px;text-transform: capitalize;"><a href="index.html" class="logo" id="admin_name"></a></h1>
+          <ul class="list-unstyled components mb-5">
+            <li onclick="handleMenuClick('invoices');" class="active">
+              <a href="#homeSubmenu" data-toggle="collapse" aria-expanded="false"><i class="fa fa-file"></i> Invoices</a>
+            </li>
+            <li onclick="handleMenuClick('clients');">
+                <a href="#"><i class="fa fa-users"></i> Clients</a>
+            </li>
+            <li>
+              <a href="#pageSubmenu" data-toggle="collapse" aria-expanded="false" class="dropdown-toggle"><i class="fa fa-cog"></i> Settings</a>
+              <ul class="collapse list-unstyled" id="pageSubmenu">
+                <li onclick="handleMenuClick('manage_service');">
+                    <a href="#">Manage Service</a>
+                </li>
+                <li onclick="handleMenuClick('manage_company');">
+                    <a href="#">Manage Company</a>
+                </li>
+                <li onclick="handleMenuClick('my_profile');">
+                    <a href="#">My Profile</a>
+                </li>
+              </ul>
+            </li>
+          </ul>
+
+          <div class="footer">
+            <button onclick="logout();"><i class="fa fa-mail-reply-all"></i> Logout</button>
+          </div>
+
+        </div>
+      </nav>
+
+      <!-- Page Content  -->
+      <div id="content" class="p-4 p-md-5 pt-5">
+          <h2><i class="fa fa-pencil"></i> Invoice</h2>
+          <div style="display: inline-flex;width: 100%;position: relative;">
+            <button type="button" id="add_new_invoice" class="btn btn-primary" style="width: 135px;position: absolute;top: -50px;right: 0;">Add Invoice</button>
+          </div>
+          <div style="padding-top: 20px;">
+            <form>
+              <div class="row">
+                <div class="col">
+                  <label style="width: 100%;">
+                    Search clients
+                    <input type="search" class="form-control" id="search_client" placeholder="Search client" onkeyup="getClients();">
+                    <input type="hidden" name="client_id" id="client_id">
+                    <input type="hidden" name="company_id" id="company_id">
+                    <div id="client_list" style="padding: 0px 20px;background: white;">
+                      
+                    </div>
+                  </label>
+                </div>
+                <div class="col">
+                  <label style="width: 100%;">
+                    Invoice Number
+                    <input type="text" class="form-control" id="number" placeholder="Invoice Number">
+                  </label>
+                </div>
+              </div>
+              <div class="row pt-4">
+                <div class="col">
+                  <label style="width: 100%;">
+                    Invoice Date
+                    <input type="date" class="form-control" name="date" id="date" style="width: 100%;">
+                  </label>
+                </div>
+                <div class="col">
+                  <div style="margin-top: 35px;" class="custom-control custom-switch">
+                    <input type="checkbox" class="custom-control-input" id="customSwitch1" value="true">
+                    <label class="custom-control-label" for="customSwitch1"> <b>Paid?</b></label>
+                    <small> *Swipe if payment is complete</small>
+                  </div>
+                </div>
+              </div>
+              <div class="row" id="services_list">
+                <label style="width: 100%;margin: 15px 15px 5px 15px;">Services</label>
+              </div>
+            </form>
+          </div>
+      </div>
+      <!-- End Page Content -->
+    </div>
+    <script>
+      const $ = require('jquery');
+      const axios = require('axios');
+      const { remote } = require('electron');
+      require('popper.js');
+      require('bootstrap');
+
+      const API = 'http://127.0.0.1/billingsystem/api/v1';
+      
+      let admin = localStorage.getItem('username');
+      $('#admin_name').html(admin);
+
+      $('#client_list').css('visibility','hidden');
+      $('#search_client').on('click', function(){
+        getClients();
+      });
+      var getClients = function(){
+        let clientList = ""
+        $('#client').val('');
+        $('#company_id').val('');
+        const url = API+"/get-clients?name="+$('#search_client').val();
+        let token = localStorage.getItem('access_token');
+        axios.get(url, { 
+          headers: {
+              'Authorization': `Bearer ${token}`
+          }
+        }).then(response => {
+          if(response.data.data.status == "success"){
+            let clients = response.data.data.response
+            clients.map((client,index)=>{
+              clientList += `<div style="border-bottom: 2px solid #fafafa;"><input type="radio" name="name" value="${client.id}" onclick="setClient('${client.id}','${client.name}','${client.company_id}')"> ${client.name}</div>`
+            });
+              $('#client_list').css('min-height','10px');
+              $('#client_list').css('max-height','100px');
+              $('#client_list').css('height', '10 px');
+              $('#client_list').css('overflow-y', 'scroll');
+            $('#client_list').html(clientList);
+            $('#client_list').css('visibility','visible');
+          }
+        });
+      }
+
+      var setClient = function(id, name,company_id){
+        $('#client_list').css('visibility','hidden');
+        $('#client_id').val(id);
+        $('#company_id').val(company_id);
+        $('#search_client').val(name);
+      }
+
+      let serviceUrl = API+'/get-services';
+      let token = localStorage.getItem('access_token');
+        axios.get(serviceUrl, { 
+          headers: {
+              'Authorization': `Bearer ${token}`
+          }
+        }).then(response => {
+          if(response.data.data.status == "success"){
+            let services = response.data.data.response
+            let servicesList = "";
+            services.map((service,index)=>{
+              servicesList += `<div class="col-md-3">
+                  <input type="checkbox" name="service_name[]" value="${service.id}"> ${service.name} 
+                </div>`
+            })
+            $('#services_list').append(servicesList)
+          }
+        });
+
+      $('#add_new_invoice').on('click', function(){
+        let client_id = $('#client_id').val();
+        let company_id = $('#company_id').val();
+        let number = $('#number').val();
+        let date = $('#date').val();
+        let status = 'unpaied';
+
+        if(client_id=='' || company_id==''){
+          $('#search_client').css('border', '1px solid red');
+          return;
+        }else{
+          $('#search_client').css('border', 'none');
+        }
+        if(number==''){
+          $('#number').css('border', '1px solid red');
+          return;
+        }else{
+          $('#number').css('border', 'none');
+        }
+        if(date==''){
+          $('#date').css('border', '1px solid red');
+          return;
+        }else{
+          $('#date').css('border', 'none');
+        }
+
+        if($("#customSwitch1").prop('checked') == true){
+            status = 'paid';
+        }
+
+        var services = new Array();
+        $.each($("input[name='service_name[]']:checked"), function() {
+          services.push($(this).val());
+        });
+
+        if(services.length==0){
+          Notification.requestPermission().then(function (result){
+              var myNotification = new Notification('Invoice Adding Failed!', {
+                  'body': 'At least one service required!'
+              })
+          })
+          return;
+        }
+
+        let data = {
+          'client_id': client_id,
+          'company_id': company_id,
+          'number': number,
+          'date': date,
+          'status': status,
+          'services': services
+        };
+        
+        let invoiceUrl = API+'/invoices';
+        let token = localStorage.getItem('access_token');
+          axios.post(invoiceUrl,data, { 
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+          }).then(response => {
+            console.log(response,'response')
+            if(response.data){
+              remote.getCurrentWindow().loadFile('src/html/index.html')
+            }
+          });
+        });
+
+      var fullHeight = function() {
+
+        $('.js-fullheight').css('height', $(window).height());
+        $(window).resize(function(){
+          $('.js-fullheight').css('height', $(window).height());
+        });
+
+      };
+      fullHeight();
+
+      $('#sidebarCollapse').on('click', function () {
+          $('#sidebar').toggleClass('active');
+      });
+
+      var handleMenuClick = function(page) {
+        if(page == 'invoices'){
+          remote.getCurrentWindow().loadFile('src/html/index.html')
+        }else if(page == 'clients'){
+          remote.getCurrentWindow().loadFile('src/html/clients.html')
+        }else if(page == 'manage_company'){
+          remote.getCurrentWindow().loadFile('src/html/company.html')
+        }else if(page == 'my_profile'){
+          remote.getCurrentWindow().loadFile('src/html/myprofile.html')
+        }else if(page == 'manage_service'){
+          remote.getCurrentWindow().loadFile('src/html/services.html')
+        }
+      }
+
+      function logout() {
+        localStorage.clear();
+        remote.getCurrentWindow().loadFile('src/html/login.html')
+      }
+    </script>
+  </body>
+</html>

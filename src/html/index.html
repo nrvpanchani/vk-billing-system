@@ -1,0 +1,341 @@
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>VK Billing System</title>
+    <!-- https://electronjs.org/docs/tutorial/security#csp-meta-tag -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+
+    <link rel="shortcut icon" href="../assets/images/vk_logo_ico.ico">
+    
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';" />
+    <link href="https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700,800,900" rel="stylesheet">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="../assets/css/index.css">
+    <style type="text/css" media="screen">
+      .paggination-ul{
+        list-style: none;display: inline-flex;
+      }
+      .paggination-ul li{
+        padding: 3px 5px;height: 25px;margin: 0 5px;border: 1px solid #001529;color: #001529;cursor: pointer;
+      }
+      .paggination-ul li:hover {
+        transition: .5s ease;
+        background: #001529!important;
+        color: white!important;
+      }  
+    </style>
+  </head>
+  <body onload="getInvoices('')">
+  	<div class="wrapper d-flex align-items-stretch">
+      <nav id="sidebar">
+        <div class="custom-menu">
+          <button type="button" id="sidebarCollapse" class="btn btn-primary">
+            <i class="fa fa-bars"></i>
+            <span class="sr-only">Toggle Menu</span>
+          </button>
+        </div>
+        <div class="p-4 pt-5">
+          <h1 style="font-size: 30px;text-transform: capitalize;"><a href="index.html" class="logo" id="admin_name"></a></h1>
+          <ul class="list-unstyled components mb-5">
+            <li onclick="handleMenuClick('invoices');" class="active">
+              <a href="#homeSubmenu" data-toggle="collapse" aria-expanded="false"><i class="fa fa-file"></i> Invoices</a>
+            </li>
+            <li onclick="handleMenuClick('clients');">
+                <a href="#"><i class="fa fa-users"></i> Clients</a>
+            </li>
+            <li>
+              <a href="#pageSubmenu" data-toggle="collapse" aria-expanded="false" class="dropdown-toggle"><i class="fa fa-cog"></i> Settings</a>
+              <ul class="collapse list-unstyled" id="pageSubmenu">
+                <li onclick="handleMenuClick('manage_service');">
+                    <a href="#">Manage Service</a>
+                </li>
+                <li onclick="handleMenuClick('manage_company');">
+                    <a href="#">Manage Company</a>
+                </li>
+                <li onclick="handleMenuClick('my_profile');">
+                    <a href="#">My Profile</a>
+                </li>
+              </ul>
+            </li>
+          </ul>
+
+          <div class="footer">
+            <button onclick="logout();"><i class="fa fa-mail-reply-all"></i> Logout</button>
+          </div>
+
+        </div>
+      </nav>
+
+      <!-- Page Content  -->
+      <div id="content" class="p-4 p-md-5 pt-5">
+          <h2><i class="fa fa-file-text-o"></i> Invoices</h2>
+          <div style="display: inline-flex;width: 100%;">
+            <button type="button" id="new_invoice" class="btn btn-primary" style="width: 135px;">New invoice</button>
+            <!-- <input type="search" class="form-control" placeholder="Search invoices" style="width: 30%;margin-left: 60%;background: none;border-bottom: 1px solid #001529;border-radius: 0;"> -->
+            <select id="payment_status" class="form-control" style="width: 30%;margin-left: 60%;background: none;border-bottom: 1px solid #001529;border-radius: 0;">
+              <option value="">--- Select Paid / Unpaied ---</option>
+              <option value="paid">Paid</option>
+              <option value="unpaied">Unpaied</option>
+            </select>
+          </div>
+          <div style="padding-top: 20px;">
+            <table class="table table-borderless">
+              <thead>
+                <tr>
+                  <th scope="col">Number</th>
+                  <th scope="col">Client</th>
+                  <th scope="col">Date</th>
+                  <th scope="col">Transaction</th>
+                  <th scope="col">Status</th>
+                  <th scope="col"></th>
+                </tr>
+              </thead>
+              <tbody id="invoicesData">
+                <tr>
+                  <td colspan="7" style="text-align: center;">
+                    <div style="height: 20px;width: 20px;font;color: #90999D!important;text-align: center;" class="spinner-border text-light" id="loading" role="status">
+                      <span class="sr-only">Loading...</span>
+                    </div>
+                  </td>  
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="7" id="paggination" style="text-align: right;">
+                    
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+      </div>
+      <!-- End Page Content -->
+      <div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-body">
+                    <center>
+                        <i class="fa fa-exclamation-circle" style="font-size: 65px;color: #f1f108;"></i>
+                        <h3 style="padding: 10px 0;">Delete Invoice?</h3>
+                        <p style="padding-bottom: 10px;">Are you sure to remove this Invoice?</p>
+                        <div style="margin-top: 5px;">
+                            <input type="hidden" name="delete_invoice_id" id="delete_invoice_id">
+                            <button type="reset" id="resetDelete" class="btn btn-secondary" style="background: none;color: grey;margin-right: 10px;">Cancel</button>
+                            <button type="submit" class="btn btn-danger add" id="deleteInvoice" style="margin-left: 10px;background-color: #f13d3d;">Delete Invoice</button>
+                        </div>
+                    </center>  
+                </div>
+            </div>
+        </div>
+      </div>
+
+      <div class="modal fade" id="editModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-body">
+                    <center>
+                        <i class="fa fa-exclamation-circle" style="font-size: 65px;color: #f1f108;"></i>
+                        <h3 style="padding: 10px 0;">Edit Invoice?</h3>
+                        <p style="padding-bottom: 10px;">Are you sure to change payment status for this Invoice?</p>
+                        <div style="margin-top: 5px;">
+                            <input type="hidden" name="edit_invoice_id" id="edit_invoice_id">
+                            <input type="hidden" name="edit_invoice_status" id="edit_invoice_status">
+                            <button type="reset" id="resetEdit" class="btn btn-secondary" style="background: none;color: grey;margin-right: 10px;">Cancel</button>
+                            <button type="submit" class="btn btn-primary add" id="editInvoice" style="margin-left: 10px;">Change Invoice</button>
+                        </div>
+                    </center>  
+                </div>
+            </div>
+        </div>
+      </div>
+    </div>
+    <script>
+      const $ = require('jquery');
+      const axios = require('axios');
+      const { remote } = require('electron');
+      require('popper.js');
+      require('bootstrap');
+
+      const API = 'http://127.0.0.1/billingsystem/api/v1';
+
+      let admin = localStorage.getItem('username');
+      $('#admin_name').html(admin);
+
+      var fullHeight = function() {
+
+        $('.js-fullheight').css('height', $(window).height());
+        $(window).resize(function(){
+          $('.js-fullheight').css('height', $(window).height());
+        });
+
+      };
+      fullHeight();
+
+      $('#sidebarCollapse').on('click', function () {
+          $('#sidebar').toggleClass('active');
+      });
+
+      $('#new_invoice').on('click', function(){
+        remote.getCurrentWindow().loadFile('src/html/new_invoice.html')
+      })
+
+      var handleMenuClick = function(page) {
+        if(page == 'invoices'){
+          remote.getCurrentWindow().loadFile('src/html/index.html')
+        }else if(page == 'clients'){
+          remote.getCurrentWindow().loadFile('src/html/clients.html')
+        }else if(page == 'manage_company'){
+          remote.getCurrentWindow().loadFile('src/html/company.html')
+        }else if(page == 'my_profile'){
+          remote.getCurrentWindow().loadFile('src/html/myprofile.html')
+        }else if(page == 'manage_service'){
+          remote.getCurrentWindow().loadFile('src/html/services.html')
+        }
+      }
+
+      let token = localStorage.getItem('access_token');
+      function getInvoices(name,page=1,limit=10){
+        const url = API+`/invoices?page=${page}&limit=${limit}&name=${name}`;
+        axios.get(url, { 
+          headers: {
+              'Authorization': `Bearer ${token}`
+          }
+        }).then(response => {
+          if(response.data.data.status == "success"){
+            let invoicesData = response.data.data.response.data
+            let count = response.data.data.response.count
+            let current_page = response.data.data.response.current_page
+            let pages = response.data.data.response.pages
+
+            if(invoicesData.length > 0){
+
+              let paggination = "";
+              if(pages > 0){
+                if(current_page==1){
+                  paggination=`<ul class="paggination-ul">
+                        <li style="cursor: not-allowed;"> <<< </li>
+                        <li style="cursor: not-allowed;"> < </li>`;
+                }else{
+                  paggination=`<ul class="paggination-ul">
+                        <li onclick="getInvoices('',${1})"> <<< </li>
+                        <li onclick="getInvoices('',${current_page-1})"> < </li>`;
+                }
+
+                for(let i=0; i<pages;i++){
+                  if(current_page == (i+1)){
+                    paggination+=`<li style="background: #001529;color: white;" onclick="getInvoices('',${i+1})"> ${i+1} </li>`;
+                  }else{
+                    paggination+=`<li onclick="getInvoices('',${i+1})"> ${i+1} </li>`;
+                  }
+                }
+                if(current_page==pages){
+                  paggination+=`<li style="cursor: not-allowed;"> > </li>
+                        <li style="cursor: not-allowed;"> >>> </li>
+                      </ul>`;
+                }else{
+                  paggination+=`<li onclick="getInvoices('',${current_page+1})"> > </li>
+                        <li onclick="getInvoices('',${pages})"> >>> </li>
+                      </ul>`;
+                }
+              }
+
+              let invoicesRecords = '';
+              invoicesData.map((invoice, index) => {
+                 
+                invoicesRecords += `<tr>
+                    <th><a href="${invoice.invoice_pdf}" target="_blank"><i class="fa fa-file-text-o"></i> #INV-${invoice.number}</a></th>
+                    <td>${invoice.client.company_name}</td>
+                    <td>${invoice.date}</td>
+                    <td>₹ ${invoice.amount}.00</td>
+                    <td><span class="badge badge-secondary ${invoice.status=='unpaied'?'red':'green'}">${invoice.status}</span></td>
+                    <td>
+                      <i class="fa fa-edit" style="cursor: pointer;" onclick="changePayment('${invoice.id}','${invoice.status}')"></i>
+                      <i class="fa fa-trash" style="cursor: pointer;" onclick="deleteInvoice('${invoice.id}')"></i>
+                    </td>
+                  </tr>`
+              });
+              $('#paggination').html(paggination);
+              $('#invoicesData').html(invoicesRecords);
+            }else{
+              $('#paggination').html("");
+              $('#invoicesData').html('<tr><td colspan="6" style="text-align: center;">No invoice found!</td></tr>')
+            }
+          }
+        });
+      }
+      function changePayment(id,status){
+        $('#edit_invoice_id').val(id);
+        $('#edit_invoice_status').val(status);
+        $('#editModal').modal('show');
+      }
+      function deleteInvoice(id){
+         $('#delete_invoice_id').val(id);
+         $('#deleteModal').modal('show'); 
+      }
+
+      $('#resetDelete').on('click', function(){
+        $('#deleteModal').modal('hide');
+        $('#delete_invoice_id').val('');
+      })
+
+      $('#resetEdit').on('click', function(){
+        $('#editModal').modal('hide');
+        $('#edit_invoice_id').val('');
+        $('#edit_invoice_status').val('');
+      })
+
+      $('#editInvoice').on('click', function(){
+        let id = $('#edit_invoice_id').val();
+        let status = '';
+        if($('#edit_invoice_status').val() == 'paid'){
+          status = 'unpaied';
+        }else{
+          status = 'paid';
+        }
+        if(id!=''){
+          let url = API+'/invoices/'+id;
+          axios.put(url, {'status': status}, { 
+              headers: {
+                  'Authorization': `Bearer ${token}`
+              }
+          }).then(response=>{
+            console.log(response,'--response')
+              if(response.data.response){
+                  $("#editModal").modal('hide');
+                  getInvoices('');
+              }
+          })
+        }
+      });
+
+      $('#deleteInvoice').on('click', function(){
+        let id = $('#delete_invoice_id').val();
+        if(id!=''){
+          let url = API+'/invoices/'+id;
+          axios.delete(url, { 
+              headers: {
+                  'Authorization': `Bearer ${token}`
+              }
+          }).then(response=>{
+              if(response.status==204){
+                  $("#deleteModal").modal('hide');
+                  getInvoices('');
+              }
+          })
+        }
+      });
+
+      $('#payment_status').on('change', function() {
+        let name = $('#payment_status').val();
+        getInvoices(name);
+      });
+
+      function logout() {
+        localStorage.clear();
+        remote.getCurrentWindow().loadFile('src/html/login.html')
+      }
+    </script>
+  </body>
+</html>
