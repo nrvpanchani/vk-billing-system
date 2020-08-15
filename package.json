@@ -1,0 +1,32 @@
+{
+  "name": "VK_Associates",
+  "version": "1.0.0",
+  "description": "Vk Billing system for manage their clients",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-packager . --out=dist/win --platform=win32 --arch=x64 vk-associates-billing-app-v0.1 --icon=src/assets/images/vk_logo_ico.ico"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nrvpanchani/vk-billing-system.git"
+  },
+  "author": "VK",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/nrvpanchani/vk-billing-system/issues"
+  },
+  "homepage": "https://github.com/nrvpanchani/vk-billing-system#readme",
+  "devDependencies": {
+    "electron": "^9.0.5"
+  },
+  "dependencies": {
+    "axios": "^0.19.2",
+    "bootstrap": "^4.5.0",
+    "electron-packager": "^15.0.0",
+    "electron-wix-msi": "^3.0.0",
+    "jquery": "^3.5.1",
+    "path": "^0.12.7",
+    "popper.js": "^1.16.1"
+  }
+}
